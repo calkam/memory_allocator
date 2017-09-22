@@ -12,7 +12,9 @@ typedef struct memory_block_free{
 } mem_bfree_t; 
 
 /* Structure declaration for an allocated block */
-typedef mem_bfree_t mem_balloc_t;
+//typedef mem_bfree_t mem_balloc_t;
+
+typedef uint16_t mem_alloc_t;
 
 /* Specific metadata for allocated blocks */
 /* typedef struct memory_block_allocated{ */

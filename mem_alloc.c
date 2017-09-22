@@ -5,8 +5,8 @@
 
 #include "mem_alloc_types.h"
 
-#define MEMORY_SIZE 512
-#define MAIN
+//#define MEMORY_SIZE 512
+//#define MAIN
 
 /* memory */
 char memory[MEMORY_SIZE];
@@ -51,35 +51,61 @@ mem_bfree_t *add_offset_address(mem_bfree_t *addr, int size){
 	return (mem_bfree_t *)((char *)addr + size);
 }
 
+void print_list(){
+	mem_bfree_t *AC = first_free;
+	
+	while(AC != NULL){
+		printf("{");
+		printf("%lu, ", ULONG(AC));
+		printf("%d}\n", AC->block_size);
+		AC = AC->next;
+	}
+}
+
 char *memory_alloc(int size){
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
+	
+	mem_alloc_t *block_size;
+	
+	size = size + sizeof(uint16_t);
 	
 	while(AC != NULL && AC->block_size < size){
 		AP = AC;
 		AC = AC->next;
 	}
 	
-	print_alloc_info((char *)AC, size);
-	
 	if(AC != NULL){
-		if(AC==first_free){
+		block_size = (mem_alloc_t*)AC;
+		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
+			printf("ok1\n");
+			if(AP==first_free){
+				AP = AC->next;
+			}else{
+				AP->next = AC->next;
+			}
+		}else if(AC==first_free){
 			first_free = add_offset_address(AC, size);
 			first_free->next = AC->next;
 			first_free->block_size = AC->block_size - size;
-		}else if(AC->block_size - size < sizeof(mem_bfree_t)){
-			AP->next = AC->next;
+			printf("ok2\n");
 		}else{
+			printf("ok3\n");
 			AC = add_offset_address(AC, size);
 			AC->next = AP->next->next;
 			AC->block_size = AP->next->block_size - size;
 			AP->next = AC;
 		}
+		*block_size = size;
+		print_alloc_info((char *)AC, size);
 	}else{
 		print_alloc_error(size);
-		exit(0); /* sinon return NULL et vérification de la valeur de retour dans le 
-					main pour soulever l'erreur */
+		exit(0);
+		/* sinon return NULL et vérification de la valeur de retour dans le 
+		main pour soulever l'erreur */
 	}
+	
+	print_list();
 	
 	return (char *)AC;
 }
@@ -87,30 +113,50 @@ char *memory_alloc(int size){
 void memory_free(char *p){
 
 	/* Warning: do not forget to call print_free_info() */
+    mem_bfree_t *AC = first_free;
+//  mem_bfree_t *AP = first_free;
+    mem_bfree_t *new_fblock;
     
+    uint16_t size = *p;
     
+    while(AC != NULL && ULONG(p) > ULONG(AC)){
+//    	AP = AC;
+    	AC = AC->next;
+    }
+    
+    new_fblock = (mem_bfree_t *)p;
+    
+    new_fblock->block_size = size;
+    new_fblock->next = AC;
+    
+    first_free = new_fblock;
+    
+	print_list();
 }
 
 void memory_display_state(void){
 	mem_bfree_t *AC = first_free;
+
+	if(AC != NULL){
+		int block_size_allocate = ULONG(AC) - ULONG(memory);
+		for(int i=0; i<block_size_allocate; i++){
+			printf("X");
+		}
+	}
 
 	while(AC != NULL){
 		for(int i=0; i<AC->block_size; i++){
 			printf(".");
 		}
 		if(AC->next != NULL){
-			/*int current_block_size  = AC->block_size;
-			int current_address     = (int)AC;
-			int next_address        = (int)(AC = AC->next);
-			int block_size_allocate = next_address - (current_address + current_block_size);*/
 			int block_size_allocate = AC->next - (AC + AC->block_size);
 			for(int i=0; i<block_size_allocate; i++){
 				printf("X");
 			}
-			AC = AC->next;
 		}
+		AC = AC->next;
 	}
-	
+	printf("\n");
 }
 
 

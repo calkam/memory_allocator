@@ -13,6 +13,7 @@ void memory_display_state(void);
 void run_at_exit(void);
 
 /* Logging functions */
+void print_list(void);
 
 /* to be called when a block has been successfully allocated */
 /* addr: the address of the allocated region returned to the user */
