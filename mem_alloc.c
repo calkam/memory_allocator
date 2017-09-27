@@ -152,7 +152,7 @@ char *memory_alloc(int size){
 		main pour soulever l'erreur */
 	}
 	
-	print_list();
+	//print_list();
 	
 	return (char *)add_offset_address(AC, sizeof(uint16_t));
 }
@@ -209,19 +209,10 @@ void memory_free(char *p){
 	
 	fusion_free();
 	
-	print_list();
+	//print_list();
 }
 
 void memory_display_state(void){
-	// test purpose	
-	/*int indice;
-	char *address = memory; //your address  
-
-	for(indice=0;indice<512;indice++) 
-	     printf("%02X",*address++);*/
-	// end of test
-
-	
 	mem_bfree_t *AC = first_free;
 
 	if(AC != NULL){
@@ -236,7 +227,7 @@ void memory_display_state(void){
 			printf(".");
 		}
 		if(AC->next != NULL){
-			int block_size_allocate = AC->next - (AC + AC->block_size);
+			int block_size_allocate = ULONG(AC->next) - (ULONG(AC) + AC->block_size);
 			for(int i=0; i<block_size_allocate; i++){
 				printf("X");
 			}

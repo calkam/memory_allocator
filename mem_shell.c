@@ -23,22 +23,18 @@ int main(int argc, char *argv[]) {
 	memory_init();
 
 	while (1) {
-		printf("Tapez une commande :");
 		commande = getchar();
 		switch (commande) {
 			case 'a':
-				printf("Rentrer une taille :");
 		  		scanf ("%d",&taille);
 			  	block_pointer[count]=memory_alloc(taille);
 				count++;
 		  	break;
 			case 'f': 
-				printf("rentrer un index :");
 	            scanf("%d",&index);
                 memory_free(block_pointer[index]);
 		  	break;
 		  	case 'd':
-			  	printf("rentrer un index :");
 	            scanf("%d",&index);
                 char *addr = block_pointer[index];
                 printf("%lu\n", ULONG(addr));
