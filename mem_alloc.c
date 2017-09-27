@@ -61,8 +61,6 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 	mem_bfree_t *APmax = AP;
 	mem_bfree_t *ACmax = AC;
 
-	ACmax->block_size = MEMORY_SIZE;
-
 	while(AC != NULL){
 		if(AC->block_size > size && (AC->block_size > ACmax->block_size)){
 			ACmax = AC;
@@ -72,8 +70,8 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 		AC = AC->next;
 	}
 	
-	*previous_address = ACmax;
-	*current_address = APmax;
+	*previous_address = APmax;
+	*current_address = ACmax;
 }
 
 #endif
@@ -130,8 +128,6 @@ char *memory_alloc(int size){
 	if(AC != NULL){
 		block_size = (mem_alloc_t*)AC;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
-			// TODO: Ne pas oublier de retirer ce commentaire
-			// cette partie est niquée dans le cas du first fit
 			if(AC==first_free){
 				first_free = AC->next;
 			}else{
