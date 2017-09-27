@@ -19,16 +19,24 @@ mem_bfree_t *first_free;
 
 #if defined(FIRST_FIT)
 
-void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size){
+	mem_bfree_t *AP = *previous_address;
+	mem_bfree_t *AC = *current_address;
+	
 	while(AC != NULL && AC->block_size < size){
 		AP = AC;
 		AC = AC->next;
 	}   
+
+	*previous_address = AP;
+	*current_address = AC;
 }
 
 #elif defined(BEST_FIT)
 
-void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size){
+	mem_bfree_t *AP = *previous_address;
+	mem_bfree_t *AC = *current_address;
 	mem_bfree_t *APmin = AP;
 	mem_bfree_t *ACmin = AC;
 
@@ -41,13 +49,13 @@ void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
 		AC = AC->next;
 	}
 	
-	AC = ACmin;
-	AP = APmin;
+	*previous_address = APmin;
+	*current_address = ACmin;
 }
 
 #elif defined(WORST_FIT)
 
-void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+mem_bfree_t *fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
 	mem_bfree_t *APmax = AP;
 	mem_bfree_t *ACmax = AC;
 
@@ -107,6 +115,7 @@ char *memory_alloc(int size){
 		size = sizeof(mem_bfree_t);
 	}
 	
+	//TODO: try to put AP at NULL
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
 	
@@ -114,12 +123,14 @@ char *memory_alloc(int size){
 	
 	size = size + sizeof(uint16_t);
 	
-	fit(AP, AC, size);
+	fit(&AP, &AC, size);
 	
 	if(AC != NULL){
 		block_size = (mem_alloc_t*)AC;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
-			if(AP==first_free){
+			// TODO: Ne pas oublier de retirer ce commentaire
+			// cette partie est niquée dans le cas du first fit
+			if(AC==first_free){
 				first_free = AC->next;
 			}else{
 				AP->next = AC->next;
@@ -195,6 +206,8 @@ void memory_free(char *p){
     }else{
     	AP->next = new_fblock;
     }
+	
+	print_free_info((char *)new_fblock);
 	
 	fusion_free();
 	

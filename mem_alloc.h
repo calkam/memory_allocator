@@ -8,7 +8,7 @@ void memory_init(void);
 char *memory_alloc(int size); 
 void memory_free(char *p);
 
-void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size);
+void fit(mem_bfree_t**, mem_bfree_t**, int);
 
 void fusion_free(void);
 
