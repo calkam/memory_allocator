@@ -79,8 +79,21 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 void run_at_exit(void){
     /* function called when the programs exits */
     /* To be used to display memory leaks informations */
-    
-    /* ... */
+	mem_bfree_t *AC = first_free;
+	
+	int i=0;
+	
+	while(AC != NULL && i < 1){
+		AC = AC->next;
+		i++;
+	}
+	
+	if(i == 1 && first_free != NULL && first_free->block_size == 512){
+		printf("All the memory have been freed\n");
+	}else{
+		printf("Allocated blocks haven't been freed\n");
+		memory_display_state();
+	}
 }
 
 void memory_init(void){
@@ -115,13 +128,16 @@ char *memory_alloc(int size){
 		size = sizeof(mem_bfree_t);
 	}
 	
-	//TODO: try to put AP at NULL
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
 	
 	mem_alloc_t *block_size;
 	
 	size = size + sizeof(uint16_t);
+	
+	while(size % MEM_ALIGNMENT != 0){
+		size++;
+	}
 	
 	fit(&AP, &AC, size);
 	
@@ -183,7 +199,6 @@ void fusion_free(){
 
 void memory_free(char *p){
 
-	/* Warning: do not forget to call print_free_info() */
     mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
     mem_bfree_t *new_fblock;
