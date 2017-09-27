@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <string.h>
-//#include <stdlib.h>
+#include <stdint.h>
 
 #include "mem_alloc.h"
 
 #define SIZE_BUFFER 128
+
+#define ULONG(x)((long unsigned int)(x))
 
 int main(int argc, char *argv[]) {
 	char buffer[SIZE_BUFFER];
@@ -34,14 +36,21 @@ int main(int argc, char *argv[]) {
 				printf("rentrer un index :");
 	            scanf("%d",&index);
                 memory_free(block_pointer[index]);
-		  break;
-		case 'p':
-		  memory_display_state();
-		  break;
-		case 'q':
-			exit(0);
-		default:
-			fprintf(stderr,"Command not found !\n");
+		  	break;
+		  	case 'd':
+			  	printf("rentrer un index :");
+	            scanf("%d",&index);
+                char *addr = block_pointer[index];
+                printf("%lu\n", ULONG(addr));
+	            printf("%d\n", *addr);
+            break;
+			case 'p':
+				memory_display_state();
+			break;
+			case 'q':
+				exit(0);
+			default:
+				fprintf(stderr,"Command not found !\n");
 		}
 		/* empty the rest of the line from the input buffer*/
 		fgets(buffer,SIZE_BUFFER,stdin);

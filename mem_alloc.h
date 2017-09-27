@@ -1,10 +1,16 @@
 #ifndef   	_MEM_ALLOC_H_
 #define   	_MEM_ALLOC_H_
 
+#include "mem_alloc_types.h"
+
 /* Allocator functions, to be implemented in mem_alloc.c */
 void memory_init(void); 
 char *memory_alloc(int size); 
 void memory_free(char *p);
+
+void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size);
+
+void fusion_free(void);
 
 /* Display function, to be implemented in mem_alloc.c */
 void memory_display_state(void);

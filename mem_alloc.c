@@ -19,20 +19,56 @@ mem_bfree_t *first_free;
 
 #if defined(FIRST_FIT)
 
-/* code specific to first fit strategy can be inserted here */
+void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+	while(AC != NULL && AC->block_size < size){
+		AP = AC;
+		AC = AC->next;
+	}   
+}
 
 #elif defined(BEST_FIT)
 
-/* code specific to best fit strategy can be inserted here */
+void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+	mem_bfree_t *APmin = AP;
+	mem_bfree_t *ACmin = AC;
+
+	while(AC != NULL){
+		if(AC->block_size > size && (AC->block_size < ACmin->block_size)){
+			ACmin = AC;
+			APmin = AP;
+		}
+		AP = AC;
+		AC = AC->next;
+	}
+	
+	AC = ACmin;
+	AP = APmin;
+}
 
 #elif defined(WORST_FIT)
 
-/* code specific to worst fit strategy can be inserted here */
+void fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+	mem_bfree_t *APmax = AP;
+	mem_bfree_t *ACmax = AC;
+
+	ACmax->block_size = MEMORY_SIZE;
+
+	while(AC != NULL){
+		if(AC->block_size > size && (AC->block_size > ACmax->block_size)){
+			ACmax = AC;
+			APmax = AP;
+		}
+		AP = AC;
+		AC = AC->next;
+	}
+	
+	AC = ACmax;
+	AP = APmax;
+}
 
 #endif
 
-void run_at_exit(void)
-{
+void run_at_exit(void){
     /* function called when the programs exits */
     /* To be used to display memory leaks informations */
     
@@ -42,9 +78,11 @@ void run_at_exit(void)
 void memory_init(void){
 	/* register the function that will be called when the programs exits*/
 	atexit(run_at_exit);
+	memset(memory, -1, MEMORY_SIZE);
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
 	first_free->next = NULL;
+	//printf("memory alocated for blocksize : %lu\n", ULONG(&first_free->next)-ULONG(&first_free->block_size));
 }
 
 mem_bfree_t *add_offset_address(mem_bfree_t *addr, int size){
@@ -63,6 +101,12 @@ void print_list(){
 }
 
 char *memory_alloc(int size){
+
+	if(size < sizeof(mem_bfree_t)){
+		printf("allocating %lu bytes instead of %d\n", sizeof(mem_bfree_t), size);
+		size = sizeof(mem_bfree_t);
+	}
+	
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
 	
@@ -70,17 +114,13 @@ char *memory_alloc(int size){
 	
 	size = size + sizeof(uint16_t);
 	
-	while(AC != NULL && AC->block_size < size){
-		AP = AC;
-		AC = AC->next;
-	}
+	fit(AP, AC, size);
 	
 	if(AC != NULL){
 		block_size = (mem_alloc_t*)AC;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
-			printf("ok1\n");
 			if(AP==first_free){
-				AP = AC->next;
+				first_free = AC->next;
 			}else{
 				AP->next = AC->next;
 			}
@@ -88,9 +128,7 @@ char *memory_alloc(int size){
 			first_free = add_offset_address(AC, size);
 			first_free->next = AC->next;
 			first_free->block_size = AC->block_size - size;
-			printf("ok2\n");
 		}else{
-			printf("ok3\n");
 			AC = add_offset_address(AC, size);
 			AC->next = AP->next->next;
 			AC->block_size = AP->next->block_size - size;
@@ -107,34 +145,72 @@ char *memory_alloc(int size){
 	
 	print_list();
 	
-	return (char *)AC;
+	return (char *)add_offset_address(AC, sizeof(uint16_t));
+}
+
+void fusion_free(){
+
+	mem_bfree_t *AP = first_free;	
+	mem_bfree_t *AC = first_free;
+	
+	while(AC != NULL && (ULONG(add_offset_address(AP, AP->block_size)) != ULONG(AC))){
+		AP = AC;
+		AC = AC->next;
+	}
+	
+	if(AC != NULL){
+		AP->block_size += AC->block_size;
+		AP->next = AC->next;
+	
+		AC = AC->next;
+	
+		if(ULONG(add_offset_address(AP, AP->block_size)) == ULONG(AC)){
+			AP->block_size += AC->block_size;
+			AP->next = AC->next;
+		}
+	}
+	
 }
 
 void memory_free(char *p){
 
 	/* Warning: do not forget to call print_free_info() */
     mem_bfree_t *AC = first_free;
-//  mem_bfree_t *AP = first_free;
+	mem_bfree_t *AP = first_free;
     mem_bfree_t *new_fblock;
     
-    uint16_t size = *p;
+    uint16_t size = *(p - sizeof(uint16_t));
     
     while(AC != NULL && ULONG(p) > ULONG(AC)){
-//    	AP = AC;
+    	AP = AC;
     	AC = AC->next;
     }
     
-    new_fblock = (mem_bfree_t *)p;
-    
+    new_fblock = (mem_bfree_t *)(p - sizeof(uint16_t));
     new_fblock->block_size = size;
     new_fblock->next = AC;
     
-    first_free = new_fblock;
-    
+    if(AC == first_free){
+    	first_free = new_fblock;
+    }else{
+    	AP->next = new_fblock;
+    }
+	
+	fusion_free();
+	
 	print_list();
 }
 
 void memory_display_state(void){
+	// test purpose	
+	/*int indice;
+	char *address = memory; //your address  
+
+	for(indice=0;indice<512;indice++) 
+	     printf("%02X",*address++);*/
+	// end of test
+
+	
 	mem_bfree_t *AC = first_free;
 
 	if(AC != NULL){
