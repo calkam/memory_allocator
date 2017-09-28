@@ -79,8 +79,21 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 void run_at_exit(void){
     /* function called when the programs exits */
     /* To be used to display memory leaks informations */
-    
-    /* ... */
+	mem_bfree_t *AC = first_free;
+	
+	int i=0;
+	
+	while(AC != NULL && i < 1){
+		AC = AC->next;
+		i++;
+	}
+	
+	if(i == 1 && first_free != NULL && first_free->block_size == 512){
+		printf("All the memory have been freed\n");
+	}else{
+		printf("Allocated blocks haven't been freed\n");
+		memory_display_state();
+	}
 }
 
 void memory_init(void){
@@ -102,7 +115,7 @@ void print_list(){
 	
 	while(AC != NULL){
 		printf("{");
-		printf("%lu, ", ULONG(AC));
+		printf("%lu, ", ULONG(AC) - ULONG(memory));
 		printf("%d}\n", AC->block_size);
 		AC = AC->next;
 	}
@@ -110,23 +123,29 @@ void print_list(){
 
 char *memory_alloc(int size){
 
-	if(size < sizeof(mem_bfree_t)){
+	/*if(size < sizeof(mem_bfree_t)){
 		printf("allocating %lu bytes instead of %d\n", sizeof(mem_bfree_t), size);
 		size = sizeof(mem_bfree_t);
-	}
+	}*/
+	char *new_offset;
 	
-	//TODO: try to put AP at NULL
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
 	
-	mem_alloc_t *block_size;
+	mem_balloc_t *block_allocate;
 	
-	size = size + sizeof(uint16_t);
+	size = size + sizeof(mem_balloc_t);
+	
+	while(size % MEM_ALIGNMENT != 0){
+		size++;
+	}
 	
 	fit(&AP, &AC, size);
 	
+	new_offset = (char *)add_offset_address(AC, sizeof(mem_balloc_t));
+	
 	if(AC != NULL){
-		block_size = (mem_alloc_t*)AC;
+		block_allocate = (mem_balloc_t*)AC;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
 			if(AC==first_free){
 				first_free = AC->next;
@@ -143,8 +162,10 @@ char *memory_alloc(int size){
 			AC->block_size = AP->next->block_size - size;
 			AP->next = AC;
 		}
-		*block_size = size;
-		print_alloc_info((char *)AC, size);
+		block_allocate->block_size = size;
+		//*block_allocate = size;
+		int old_size = size - sizeof(mem_balloc_t);
+		print_alloc_info(new_offset, old_size);
 	}else{
 		print_alloc_error(size);
 		exit(0);
@@ -154,13 +175,15 @@ char *memory_alloc(int size){
 	
 	//print_list();
 	
-	return (char *)add_offset_address(AC, sizeof(uint16_t));
+	return new_offset;
 }
 
 void fusion_free(){
 
 	mem_bfree_t *AP = first_free;	
 	mem_bfree_t *AC = first_free;
+	
+	print_list();
 	
 	while(AC != NULL && (ULONG(add_offset_address(AP, AP->block_size)) != ULONG(AC))){
 		AP = AC;
@@ -183,19 +206,21 @@ void fusion_free(){
 
 void memory_free(char *p){
 
-	/* Warning: do not forget to call print_free_info() */
     mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
     mem_bfree_t *new_fblock;
     
-    uint16_t size = *(p - sizeof(uint16_t));
+    //mem_balloc_t size = *(p - sizeof(mem_balloc_t));
+    mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
+    
+    int size = block_allocate->block_size;
     
     while(AC != NULL && ULONG(p) > ULONG(AC)){
     	AP = AC;
     	AC = AC->next;
     }
     
-    new_fblock = (mem_bfree_t *)(p - sizeof(uint16_t));
+    new_fblock = (mem_bfree_t *)(p - sizeof(mem_balloc_t));
     new_fblock->block_size = size;
     new_fblock->next = AC;
     
@@ -205,7 +230,7 @@ void memory_free(char *p){
     	AP->next = new_fblock;
     }
 	
-	print_free_info((char *)new_fblock);
+	print_free_info((char *)new_fblock + sizeof(mem_balloc_t));
 	
 	fusion_free();
 	
