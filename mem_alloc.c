@@ -55,7 +55,9 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 
 #elif defined(WORST_FIT)
 
-mem_bfree_t *fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
+void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size){
+	mem_bfree_t *AP = *previous_address;
+	mem_bfree_t *AC = *current_address;
 	mem_bfree_t *APmax = AP;
 	mem_bfree_t *ACmax = AC;
 
@@ -70,8 +72,8 @@ mem_bfree_t *fit(mem_bfree_t *AP, mem_bfree_t *AC, int size){
 		AC = AC->next;
 	}
 	
-	AC = ACmax;
-	AP = APmax;
+	*previous_address = ACmax;
+	*current_address = APmax;
 }
 
 #endif
