@@ -61,8 +61,6 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 	mem_bfree_t *APmax = AP;
 	mem_bfree_t *ACmax = AC;
 
-	ACmax->block_size = MEMORY_SIZE;
-
 	while(AC != NULL){
 		if(AC->block_size > size && (AC->block_size > ACmax->block_size)){
 			ACmax = AC;
@@ -72,8 +70,8 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 		AC = AC->next;
 	}
 	
-	*previous_address = ACmax;
-	*current_address = APmax;
+	*previous_address = APmax;
+	*current_address = ACmax;
 }
 
 #endif
@@ -130,8 +128,6 @@ char *memory_alloc(int size){
 	if(AC != NULL){
 		block_size = (mem_alloc_t*)AC;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
-			// TODO: Ne pas oublier de retirer ce commentaire
-			// cette partie est niquée dans le cas du first fit
 			if(AC==first_free){
 				first_free = AC->next;
 			}else{
@@ -156,7 +152,7 @@ char *memory_alloc(int size){
 		main pour soulever l'erreur */
 	}
 	
-	print_list();
+	//print_list();
 	
 	return (char *)add_offset_address(AC, sizeof(uint16_t));
 }
@@ -213,19 +209,10 @@ void memory_free(char *p){
 	
 	fusion_free();
 	
-	print_list();
+	//print_list();
 }
 
 void memory_display_state(void){
-	// test purpose	
-	/*int indice;
-	char *address = memory; //your address  
-
-	for(indice=0;indice<512;indice++) 
-	     printf("%02X",*address++);*/
-	// end of test
-
-	
 	mem_bfree_t *AC = first_free;
 
 	if(AC != NULL){
@@ -240,7 +227,7 @@ void memory_display_state(void){
 			printf(".");
 		}
 		if(AC->next != NULL){
-			int block_size_allocate = AC->next - (AC + AC->block_size);
+			int block_size_allocate = ULONG(AC->next) - (ULONG(AC) + AC->block_size);
 			for(int i=0; i<block_size_allocate; i++){
 				printf("X");
 			}
