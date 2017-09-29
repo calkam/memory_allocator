@@ -171,7 +171,7 @@ char *memory_alloc(int size){
 		print_alloc_error(size);
 		exit(0);
 		/* sinon return NULL et vérification de la valeur de retour dans le 
-		main pour soulever l'erreur */
+			main pour soulever l'erreur */
 	}
 	
 	//print_list();
@@ -205,7 +205,32 @@ void fusion_free(){
 	
 }
 
+int is_allocated(char *p){
+	mem_bfree_t *AC = first_free;
+
+	while(AC != NULL && (ULONG(p) < ULONG(AC) || ULONG(p) > (ULONG(AC)+AC->block_size))){
+		AC = AC->next;
+	}
+	
+	return AC == NULL;
+}
+
+int is_start_allocate_zone(char *p){
+	
+    mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
+    
+    return block_allocate->block_size;
+}
+
 void memory_free(char *p){
+
+	if(!is_allocated(p)){
+		printf("This address is already freed\n");
+		return;
+	}else if(!is_start_allocate_zone(p)){
+		printf("This address is not the start of an allocate zone\n");
+		return;
+	}
 
     mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;

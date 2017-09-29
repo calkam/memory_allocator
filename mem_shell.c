@@ -32,7 +32,6 @@ int main(int argc, char *argv[]) {
 		  	break;
 			case 'f': 
 	            scanf("%d",&index);
-				//memory_free((char*)6299872);
 				memory_free(block_pointer[index]);
 		  	break;
 		  	case 'd':
