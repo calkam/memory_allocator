@@ -103,6 +103,7 @@ void memory_init(void){
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
 	first_free->next = NULL;
+	//printf("%lu\n", ULONG(memory));
 	//printf("memory alocated for blocksize : %lu\n", ULONG(&first_free->next)-ULONG(&first_free->block_size));
 }
 
@@ -183,7 +184,7 @@ void fusion_free(){
 	mem_bfree_t *AP = first_free;	
 	mem_bfree_t *AC = first_free;
 	
-	print_list();
+	//print_list();
 	
 	while(AC != NULL && (ULONG(add_offset_address(AP, AP->block_size)) != ULONG(AC))){
 		AP = AC;
