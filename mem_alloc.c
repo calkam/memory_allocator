@@ -200,6 +200,7 @@ char *memory_alloc(int size){
 	
 	if(AC != NULL){
 		block_allocate = (mem_balloc_t*)AC;
+		int original_size = size;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
 			if(AC==first_free){
 				first_free = AC->next;
@@ -220,7 +221,7 @@ char *memory_alloc(int size){
 		//TODO:Modifier le print pour bien afficher
 		block_allocate->block_size = size;
 		block_allocate->magic = MAGIC;
-		int old_size = size - sizeof(mem_balloc_t);
+		int old_size = original_size - sizeof(mem_balloc_t);
 		print_alloc_info(new_offset, old_size);
 	}else{
 		print_alloc_error(size);
