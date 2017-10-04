@@ -34,12 +34,6 @@ int main(int argc, char *argv[]) {
 	            scanf("%d",&index);
 				memory_free(block_pointer[index]);
 		  	break;
-		  	case 'd':
-	            scanf("%d",&index);
-                char *addr = block_pointer[index];
-                printf("%lu\n", ULONG(addr));
-	            printf("%d\n", *addr);
-            break;
 			case 'p':
 				memory_display_state();
 			break;

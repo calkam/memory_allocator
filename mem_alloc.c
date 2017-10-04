@@ -5,6 +5,7 @@
 
 #include "mem_alloc_types.h"
 
+#define MAGIC 314159265358979
 //#define MEMORY_SIZE 512
 //#define MAIN
 
@@ -79,16 +80,8 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 void run_at_exit(void){
     /* function called when the programs exits */
     /* To be used to display memory leaks informations */
-	mem_bfree_t *AC = first_free;
 	
-	int i=0;
-	
-	while(AC != NULL && i < 1){
-		AC = AC->next;
-		i++;
-	}
-	
-	if(i == 1 && first_free != NULL && first_free->block_size == 512){
+	if(first_free != NULL && first_free->block_size == MEMORY_SIZE){
 		printf("All the memory have been freed\n");
 	}else{
 		printf("Allocated blocks haven't been freed\n");
@@ -99,12 +92,10 @@ void run_at_exit(void){
 void memory_init(void){
 	/* register the function that will be called when the programs exits*/
 	atexit(run_at_exit);
-	memset(memory, -1, MEMORY_SIZE);
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
 	first_free->next = NULL;
-	//printf("%lu\n", ULONG(memory));
-	//printf("memory alocated for blocksize : %lu\n", ULONG(&first_free->next)-ULONG(&first_free->block_size));
+	printf("%lu", ULONG(memory));
 }
 
 mem_bfree_t *add_offset_address(mem_bfree_t *addr, int size){
@@ -122,12 +113,19 @@ void print_list(){
 	}
 }
 
+int memory_alignment(int size){
+	int r = size % MEM_ALIGNMENT;
+	
+	if(r != 0){
+		size += MEM_ALIGNMENT - r;
+	}
+	
+	return size;
+}
+
+
 char *memory_alloc(int size){
 
-	/*if(size < sizeof(mem_bfree_t)){
-		printf("allocating %lu bytes instead of %d\n", sizeof(mem_bfree_t), size);
-		size = sizeof(mem_bfree_t);
-	}*/
 	char *new_offset;
 	
 	mem_bfree_t *AC = first_free;
@@ -137,9 +135,7 @@ char *memory_alloc(int size){
 	
 	size = size + sizeof(mem_balloc_t);
 	
-	while(size % MEM_ALIGNMENT != 0){
-		size++;
-	}
+	size = memory_alignment(size);
 	
 	fit(&AP, &AC, size);
 	
@@ -164,7 +160,7 @@ char *memory_alloc(int size){
 			AP->next = AC;
 		}
 		block_allocate->block_size = size;
-		//*block_allocate = size;
+		block_allocate->magic = MAGIC;
 		int old_size = size - sizeof(mem_balloc_t);
 		print_alloc_info(new_offset, old_size);
 	}else{
@@ -207,19 +203,19 @@ void fusion_free(){
 
 int is_allocated(char *p){
 	mem_bfree_t *AC = first_free;
-
-	while(AC != NULL && (ULONG(p) < ULONG(AC) || ULONG(p) > (ULONG(AC)+AC->block_size))){
+	
+	while(AC != NULL && ULONG(p) > (ULONG(AC)+AC->block_size)){
 		AC = AC->next;
 	}
 	
-	return AC == NULL;
+	return (AC == NULL || ULONG(p) < ULONG(AC));
 }
 
-int is_start_allocate_zone(char *p){
+int is_allocated_zone(char *p){
 	
     mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
     
-    return block_allocate->block_size;
+    return block_allocate->magic == MAGIC;
 }
 
 void memory_free(char *p){
@@ -227,8 +223,8 @@ void memory_free(char *p){
 	if(!is_allocated(p)){
 		printf("This address is already freed\n");
 		return;
-	}else if(!is_start_allocate_zone(p)){
-		printf("This address is not the start of an allocate zone\n");
+	}else if(!is_allocated_zone(p)){
+		printf("This address is not the beginning of an allocate zone\n");
 		return;
 	}
 
@@ -236,7 +232,6 @@ void memory_free(char *p){
 	mem_bfree_t *AP = first_free;
     mem_bfree_t *new_fblock;
     
-    //mem_balloc_t size = *(p - sizeof(mem_balloc_t));
     mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
     
     int size = block_allocate->block_size;
