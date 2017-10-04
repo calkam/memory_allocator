@@ -95,7 +95,6 @@ void memory_init(void){
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
 	first_free->next = NULL;
-	printf("%lu", ULONG(memory));
 }
 
 mem_bfree_t *add_offset_address(mem_bfree_t *addr, int size){
@@ -213,17 +212,19 @@ int is_allocated(char *p){
 
 int is_allocated_zone(char *p){
 	
-    mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
+    mem_balloc_t *block_allocate = (mem_balloc_t*)p;
     
     return block_allocate->magic == MAGIC;
 }
 
 void memory_free(char *p){
 
+	mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
+
 	if(!is_allocated(p)){
 		printf("This address is already freed\n");
 		return;
-	}else if(!is_allocated_zone(p)){
+	}else if(!is_allocated_zone((char *)block_allocate)){
 		printf("This address is not the beginning of an allocate zone\n");
 		return;
 	}
@@ -231,8 +232,6 @@ void memory_free(char *p){
     mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
     mem_bfree_t *new_fblock;
-    
-    mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
     
     int size = block_allocate->block_size;
     
