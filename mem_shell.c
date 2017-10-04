@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 	char* block_pointer[1024];
 	int count=1;
 
-	memset(block_pointer,0,1024*sizeof(char*));
+	memset(block_pointer, 0, 1024*sizeof(char*));
 
 	memory_init();
 

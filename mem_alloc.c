@@ -101,6 +101,65 @@ mem_bfree_t *add_offset_address(mem_bfree_t *addr, int size){
 	return (mem_bfree_t *)((char *)addr + size);
 }
 
+int check_pointer(mem_bfree_t *AC){
+	if(AC->next == NULL){
+		return 1;
+	}
+	
+	long unsigned int anext = ULONG(AC->next);
+	long unsigned int ff = ULONG(first_free);
+
+	return (anext > ULONG(AC)) && (anext - ff < MEMORY_SIZE) && (ff - anext > 0);
+}
+
+int check_alignment(mem_bfree_t *AC){
+	return ULONG(AC) % MEM_ALIGNMENT == 0;
+}
+
+int check_magic(mem_balloc_t *AC){
+	return AC->magic == MAGIC;
+}
+
+void corruption_check(void){
+	char *p = memory;
+	int size_total;
+	mem_bfree_t *AC = first_free;
+
+	while(ULONG(p) < ULONG(memory) + MEMORY_SIZE){
+		if(ULONG(p) == ULONG(AC)){
+			if(check_alignment(AC)){
+				if(check_pointer(AC)){			
+					if(AC != NULL){
+						AC = AC->next;
+					}
+					size_total += ((mem_bfree_t *)p)->block_size;
+				}else{
+					printf("invalid pointer : corrupted free block\n");
+					exit(0);				
+				}
+			}else{
+				printf("invalid alignment : corrupted free block\n");
+				exit(0);
+			}
+		}else{
+			if(check_magic(((mem_balloc_t *) p))){
+				size_total += ((mem_balloc_t *)p)->block_size;
+			}else{
+				printf("memory corrupted\n");
+				exit(0);
+			}
+		}
+		p = memory + size_total;
+	}
+	
+	if(size_total != MEMORY_SIZE){
+		printf("sizes of blocks don't add up to memory_size\n");
+		exit(0);
+	}
+	
+	return;
+}
+
 void print_list(){
 	mem_bfree_t *AC = first_free;
 	
@@ -121,7 +180,6 @@ int memory_alignment(int size){
 	
 	return size;
 }
-
 
 char *memory_alloc(int size){
 
@@ -148,6 +206,7 @@ char *memory_alloc(int size){
 			}else{
 				AP->next = AC->next;
 			}
+			size = AC->block_size; 
 		}else if(AC==first_free){
 			first_free = add_offset_address(AC, size);
 			first_free->next = AC->next;
@@ -158,6 +217,7 @@ char *memory_alloc(int size){
 			AC->block_size = AP->next->block_size - size;
 			AP->next = AC;
 		}
+		//TODO:Modifier le print pour bien afficher
 		block_allocate->block_size = size;
 		block_allocate->magic = MAGIC;
 		int old_size = size - sizeof(mem_balloc_t);
@@ -169,7 +229,8 @@ char *memory_alloc(int size){
 			main pour soulever l'erreur */
 	}
 	
-	//print_list();
+	print_list();
+	corruption_check();
 	
 	return new_offset;
 }
@@ -254,7 +315,8 @@ void memory_free(char *p){
 	
 	fusion_free();
 	
-	//print_list();
+	corruption_check();
+	print_list();
 }
 
 void memory_display_state(void){
