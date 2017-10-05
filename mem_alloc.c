@@ -6,8 +6,6 @@
 #include "mem_alloc_types.h"
 
 #define MAGIC 314159265358979
-//#define MEMORY_SIZE 512
-//#define MAIN
 
 /* memory */
 char memory[MEMORY_SIZE];
@@ -77,20 +75,9 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 
 #endif
 
-void run_at_exit(void){
-    /* function called when the programs exits */
-    /* To be used to display memory leaks informations */
-	
-	if(first_free != NULL && first_free->block_size == MEMORY_SIZE){
-		printf("All the memory have been freed\n");
-	}else{
-		printf("Allocated blocks haven't been freed\n");
-		memory_display_state();
-	}
-}
+void run_at_exit(void){}
 
 void memory_init(void){
-	/* register the function that will be called when the programs exits*/
 	atexit(run_at_exit);
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
@@ -152,11 +139,7 @@ char *memory_alloc(int size){
 	}else{
 		print_alloc_error(size);
 		exit(0);
-		/* sinon return NULL et vérification de la valeur de retour dans le 
-			main pour soulever l'erreur */
 	}
-	
-	//print_list();
 	
 	return new_offset;
 }
@@ -165,8 +148,6 @@ void fusion_free(){
 
 	mem_bfree_t *AP = first_free;	
 	mem_bfree_t *AC = first_free;
-	
-	//print_list();
 	
 	while(AC != NULL && (ULONG(add_offset_address(AP, AP->block_size)) != ULONG(AC))){
 		AP = AC;
@@ -216,8 +197,6 @@ void memory_free(char *p){
 	print_free_info((char *)new_fblock + sizeof(mem_balloc_t));
 	
 	fusion_free();
-	
-	//print_list();
 }
 
 void memory_display_state(void){
