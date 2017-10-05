@@ -185,11 +185,10 @@ char *memory_alloc(int size){
 
 	char *new_offset;
 	int original_size;
+	mem_balloc_t *block_allocate;
 	
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
-	
-	mem_balloc_t *block_allocate;
 	
 	size = size + sizeof(mem_balloc_t);
 	
@@ -222,8 +221,7 @@ char *memory_alloc(int size){
 		}
 		block_allocate->block_size = size;
 		block_allocate->magic = MAGIC;
-		int old_size = original_size - sizeof(mem_balloc_t);
-		print_alloc_info(new_offset, old_size);
+		print_alloc_info(new_offset, original_size - sizeof(mem_balloc_t));
 	}else{
 		print_alloc_error(size);
 		exit(0);
