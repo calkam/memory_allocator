@@ -184,6 +184,7 @@ int memory_alignment(int size){
 char *memory_alloc(int size){
 
 	char *new_offset;
+	int original_size;
 	
 	mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
@@ -191,6 +192,8 @@ char *memory_alloc(int size){
 	mem_balloc_t *block_allocate;
 	
 	size = size + sizeof(mem_balloc_t);
+	
+	original_size = size;
 	
 	size = memory_alignment(size);
 	
@@ -200,7 +203,6 @@ char *memory_alloc(int size){
 	
 	if(AC != NULL){
 		block_allocate = (mem_balloc_t*)AC;
-		int original_size = size;
 		if(AC->block_size - size < sizeof(mem_bfree_t) || AC->block_size - size == 0){
 			if(AC==first_free){
 				first_free = AC->next;
