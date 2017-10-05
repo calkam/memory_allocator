@@ -44,19 +44,20 @@ void *realloc(void *ptr, size_t size){
     if(ptr == NULL)
         return memory_alloc(size);
 
-#warning This case needs to be checked again ("ps" or "ls -l" fail)
+//#warning This case needs to be checked again ("ps" or "ls -l" fail)
     /* safety check */
-    int padding = (sizeof(mem_free_block_t)% MEM_ALIGNMENT == 0)? 0: MEM_ALIGNMENT - (sizeof(mem_free_block_t) % MEM_ALIGNMENT);
-    int real_block_size = sizeof(mem_free_block_t) + padding;
+    int padding = (sizeof(mem_bfree_t)% MEM_ALIGNMENT == 0)? 0: MEM_ALIGNMENT - (sizeof(mem_bfree_t) % MEM_ALIGNMENT);
+    int real_block_size = sizeof(mem_bfree_t) + padding;
     
-    mem_free_block_t *bb = ptr-real_block_size;
+    mem_bfree_t *bb = (mem_bfree_t*)((char*)ptr-real_block_size);
     
-    fprintf(stderr, "Reallocating %d bytes to %d\n", bb->size , (int)size);
-    if(size <= bb->size)
+    fprintf(stderr, "Reallocating %d bytes to %d\n", bb->block_size , (int)size);
+    if(size <= bb->block_size)
         return ptr;
 
     char *new = memory_alloc(size);
-    memcpy(new, ptr, bb->size);
+    memcpy(new, ptr, bb->block_size);
     memory_free(ptr);
     return (void*)(new);
 }
+

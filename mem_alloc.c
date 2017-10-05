@@ -218,7 +218,6 @@ char *memory_alloc(int size){
 			AC->block_size = AP->next->block_size - size;
 			AP->next = AC;
 		}
-		//TODO:Modifier le print pour bien afficher
 		block_allocate->block_size = size;
 		block_allocate->magic = MAGIC;
 		int old_size = original_size - sizeof(mem_balloc_t);
@@ -226,8 +225,6 @@ char *memory_alloc(int size){
 	}else{
 		print_alloc_error(size);
 		exit(0);
-		/* sinon return NULL et vérification de la valeur de retour dans le 
-			main pour soulever l'erreur */
 	}
 	
 	print_list();
