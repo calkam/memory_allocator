@@ -112,17 +112,6 @@ void print_list(){
 	}
 }
 
-int memory_alignment(int size){
-	int r = size % MEM_ALIGNMENT;
-	
-	if(r != 0){
-		size += MEM_ALIGNMENT - r;
-	}
-	
-	return size;
-}
-
-
 char *memory_alloc(int size){
 
 	char *new_offset;
@@ -133,8 +122,6 @@ char *memory_alloc(int size){
 	mem_balloc_t *block_allocate;
 	
 	size = size + sizeof(mem_balloc_t);
-	
-	size = memory_alignment(size);
 	
 	fit(&AP, &AC, size);
 	
@@ -200,34 +187,10 @@ void fusion_free(){
 	
 }
 
-int is_allocated(char *p){
-	mem_bfree_t *AC = first_free;
-	
-	while(AC != NULL && ULONG(p) > (ULONG(AC)+AC->block_size)){
-		AC = AC->next;
-	}
-	
-	return (AC == NULL || ULONG(p) < ULONG(AC));
-}
-
-int is_allocated_zone(char *p){
-	
-    mem_balloc_t *block_allocate = (mem_balloc_t*)p;
-    
-    return block_allocate->magic == MAGIC;
-}
 
 void memory_free(char *p){
 
 	mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
-
-	if(!is_allocated(p)){
-		printf("This address is already freed\n");
-		return;
-	}else if(!is_allocated_zone((char *)block_allocate)){
-		printf("This address is not the beginning of an allocate zone\n");
-		return;
-	}
 
     mem_bfree_t *AC = first_free;
 	mem_bfree_t *AP = first_free;
