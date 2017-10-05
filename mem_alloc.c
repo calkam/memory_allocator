@@ -227,7 +227,6 @@ char *memory_alloc(int size){
 		exit(0);
 	}
 	
-	print_list();
 	corruption_check();
 	
 	return new_offset;
@@ -237,8 +236,6 @@ void fusion_free(){
 
 	mem_bfree_t *AP = first_free;	
 	mem_bfree_t *AC = first_free;
-	
-	//print_list();
 	
 	while(AC != NULL && (ULONG(add_offset_address(AP, AP->block_size)) != ULONG(AC))){
 		AP = AC;
@@ -266,7 +263,7 @@ int is_allocated(char *p){
 		AC = AC->next;
 	}
 	
-	return (AC == NULL || ULONG(p) < ULONG(AC));
+	return (AC == NULL || ULONG(p) <= ULONG(AC));
 }
 
 int is_allocated_zone(char *p){
@@ -314,7 +311,6 @@ void memory_free(char *p){
 	fusion_free();
 	
 	corruption_check();
-	print_list();
 }
 
 void memory_display_state(void){
@@ -373,7 +369,7 @@ int main(int argc, char **argv){
     memory_free(b);
   }
 
-  char * a = memory_alloc(15); 
+  char * a = memory_alloc(0);
   memory_free(a);
 
 

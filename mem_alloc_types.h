@@ -9,7 +9,7 @@
 typedef struct memory_block_free{
 	int block_size;
 	struct memory_block_free *next;
-} mem_bfree_t; 
+} mem_bfree_t;
 
 typedef struct {
 	int block_size;
