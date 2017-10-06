@@ -42,18 +42,25 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 	mem_bfree_t *AC = *current_address;
 	mem_bfree_t *APmin = AP;
 	mem_bfree_t *ACmin = AC;
+	int found = 0;
 
 	while(AC != NULL){
-		if(AC->block_size > size && (AC->block_size < ACmin->block_size)){
+		if(AC->block_size >= size && (AC->block_size <= ACmin->block_size)){
 			ACmin = AC;
 			APmin = AP;
+			found = 1;
 		}
 		AP = AC;
 		AC = AC->next;
 	}
 	
-	*previous_address = APmin;
-	*current_address = ACmin;
+	if(found){
+		*previous_address = APmin;
+		*current_address = ACmin;
+	}else{
+		*previous_address = NULL;
+		*current_address = NULL;
+	}
 }
 
 #elif defined(WORST_FIT)
@@ -63,18 +70,25 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 	mem_bfree_t *AC = *current_address;
 	mem_bfree_t *APmax = AP;
 	mem_bfree_t *ACmax = AC;
+	int found = 0;
 
 	while(AC != NULL){
-		if(AC->block_size > size && (AC->block_size > ACmax->block_size)){
+		if(AC->block_size >= size && (AC->block_size >= ACmax->block_size)){
 			ACmax = AC;
 			APmax = AP;
+			found = 1;
 		}
 		AP = AC;
 		AC = AC->next;
 	}
 	
-	*previous_address = APmax;
-	*current_address = ACmax;
+	if(found){
+		*previous_address = APmax;
+		*current_address = ACmax;
+	}else{
+		*previous_address = NULL;
+		*current_address = NULL;
+	}
 }
 
 #endif
@@ -124,7 +138,7 @@ int check_magic(mem_balloc_t *AC){
 
 void corruption_check(void){
 	char *p = memory;
-	int size_total;
+	int size_total=0;
 	mem_bfree_t *AC = first_free;
 
 	while(ULONG(p) < ULONG(memory) + MEMORY_SIZE){
@@ -185,6 +199,11 @@ int memory_alignment(int size){
 
 char *memory_alloc(int size){
 
+	if(size < 0){
+		printf("size < 0 is impossible\n");
+		exit(0);
+	}
+
 	char *new_offset;
 	int original_size;
 	mem_balloc_t *block_allocate;
@@ -225,9 +244,11 @@ char *memory_alloc(int size){
 		block_allocate->magic = MAGIC;
 		print_alloc_info(new_offset, original_size - sizeof(mem_balloc_t));
 	}else{
-		print_alloc_error(size);
+		print_alloc_error(original_size - sizeof(mem_balloc_t));
 		exit(0);
 	}
+	
+	print_list();
 	
 	corruption_check();
 	
@@ -312,45 +333,44 @@ void memory_free(char *p){
 	
 	fusion_free();
 	
+	print_list();
+	
 	corruption_check();
 }
 
 void memory_display_state(void){
+	int *block_size;
+	char *p = memory;
+	int size_total=0;
 	mem_bfree_t *AC = first_free;
 
-	if(AC != NULL){
-		int block_size_allocate = ULONG(AC) - ULONG(memory);
-		if(block_size_allocate > 0){
-			couleur("34");
-			printf("****metadata****");
+	while(ULONG(p) < ULONG(memory) + MEMORY_SIZE){
+		if(ULONG(p) == ULONG(AC)){
+			couleur("31");
+			printf("<metadata__free>");
 			couleur("0");
-			for(int i=0; i<block_size_allocate-sizeof(mem_bfree_t); i++){
+			for(int i=0; i<AC->block_size-sizeof(mem_bfree_t); i++){
+				printf(".");
+			}
+			if(AC != NULL){
+				AC = AC->next;
+			}
+			size_total += ((mem_bfree_t *)p)->block_size;
+		}else{
+			couleur("34");
+			printf("<metadata_alloc>");
+			couleur("0");
+			block_size = (int *)p;
+			for(int i=0; i<(*block_size)-sizeof(mem_bfree_t); i++){
 				printf("X");
 			}
+			size_total += ((mem_balloc_t *)p)->block_size;
 		}
+		p = memory + size_total;
 	}
-
-	while(AC != NULL){
-		couleur("31");
-		printf("****metadata****");
-		couleur("0");
-		for(int i=0; i<AC->block_size-sizeof(mem_bfree_t); i++){
-			printf(".");
-		}
-		if(AC->next != NULL){
-			int block_size_allocate = ULONG(AC->next) - (ULONG(AC) + AC->block_size);
-			couleur("34");
-			printf("****metadata****");
-			couleur("0");
-			for(int i=0; i<block_size_allocate; i++){
-				printf("X");
-			}
-		}
-		AC = AC->next;
-	}
+	
 	printf("\n");
 }
-
 
 void print_alloc_info(char *addr, int size){
     fprintf(stderr, "ALLOC at : %lu (%d byte(s))\n", ULONG(addr - memory), size);

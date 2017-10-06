@@ -1,7 +1,7 @@
 #ifndef   	_MEM_ALLOC_TYPES_H_
 #define   	_MEM_ALLOC_TYPES_H_
 
-#define MEM_ALIGNMENT 4
+#define MEM_ALIGNMENT 1
 
 #include <stdint.h>
 
