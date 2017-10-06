@@ -204,17 +204,28 @@ void memory_display_state(void){
 
 	if(AC != NULL){
 		int block_size_allocate = ULONG(AC) - ULONG(memory);
-		for(int i=0; i<block_size_allocate; i++){
-			printf("X");
+		if(block_size_allocate > 0){
+			couleur("34");
+			printf("****metadata****");
+			couleur("0");
+			for(int i=0; i<block_size_allocate-sizeof(mem_bfree_t); i++){
+				printf("X");
+			}
 		}
 	}
 
 	while(AC != NULL){
-		for(int i=0; i<AC->block_size; i++){
+		couleur("31");
+		printf("****metadata****");
+		couleur("0");
+		for(int i=0; i<AC->block_size-sizeof(mem_bfree_t); i++){
 			printf(".");
 		}
 		if(AC->next != NULL){
 			int block_size_allocate = ULONG(AC->next) - (ULONG(AC) + AC->block_size);
+			couleur("34");
+			printf("****metadata****");
+			couleur("0");
 			for(int i=0; i<block_size_allocate; i++){
 				printf("X");
 			}
