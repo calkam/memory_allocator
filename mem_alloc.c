@@ -45,10 +45,12 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 	int found = 0;
 
 	while(AC != NULL){
-		if(AC->block_size >= size && (AC->block_size <= ACmin->block_size)){
-			ACmin = AC;
-			APmin = AP;
+		if(AC->block_size >= size){
 			found = 1;
+			if(AC->block_size < ACmin->block_size){
+				ACmin = AC;
+				APmin = AP;
+			}
 		}
 		AP = AC;
 		AC = AC->next;
@@ -73,10 +75,12 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 	int found = 0;
 
 	while(AC != NULL){
-		if(AC->block_size >= size && (AC->block_size >= ACmax->block_size)){
-			ACmax = AC;
-			APmax = AP;
+		if(AC->block_size >= size){
 			found = 1;
+			if(AC->block_size > ACmax->block_size){
+				ACmax = AC;
+				APmax = AP;
+			}
 		}
 		AP = AC;
 		AC = AC->next;
