@@ -17,6 +17,8 @@ char memory[MEMORY_SIZE];
 /* Pointer to the first free block in the memory */
 mem_bfree_t *first_free;
 
+int corrupted = 0;
+
 #define ULONG(x)((long unsigned int)(x))
 #define max(x,y) (x>y?x:y)
 
@@ -98,9 +100,11 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 #endif
 
 void run_at_exit(void){
-    /* function called when the programs exits */
-    /* To be used to display memory leaks informations */
-	
+
+	if(corrupted){
+		return;
+	}
+
 	if(first_free != NULL && first_free->block_size == MEMORY_SIZE){
 		printf("All the memory have been freed\n");
 	}else{
@@ -155,10 +159,12 @@ void corruption_check(void){
 					size_total += ((mem_bfree_t *)p)->block_size;
 				}else{
 					printf("invalid pointer : corrupted free block\n");
+					corrupted = 1;
 					exit(0);				
 				}
 			}else{
 				printf("invalid alignment : corrupted free block\n");
+				corrupted = 1;
 				exit(0);
 			}
 		}else{
@@ -166,6 +172,7 @@ void corruption_check(void){
 				size_total += ((mem_balloc_t *)p)->block_size;
 			}else{
 				printf("memory corrupted\n");
+				corrupted = 1;
 				exit(0);
 			}
 		}
@@ -174,6 +181,7 @@ void corruption_check(void){
 	
 	if(size_total != MEMORY_SIZE){
 		printf("sizes of blocks don't add up to memory_size\n");
+		corrupted = 1;
 		exit(0);
 	}
 	
@@ -207,6 +215,8 @@ char *memory_alloc(int size){
 		printf("size < 0 is impossible\n");
 		exit(0);
 	}
+	
+	corruption_check();
 
 	char *new_offset;
 	int original_size;
@@ -251,8 +261,6 @@ char *memory_alloc(int size){
 		print_alloc_error(original_size - sizeof(mem_balloc_t));
 		exit(0);
 	}
-	
-	print_list();
 	
 	corruption_check();
 	
@@ -302,6 +310,8 @@ int is_allocated_zone(char *p){
 
 void memory_free(char *p){
 
+	corruption_check();
+
 	mem_balloc_t *block_allocate = (mem_balloc_t*)(p - sizeof(mem_balloc_t));
 
 	if(!is_allocated(p)){
@@ -336,8 +346,6 @@ void memory_free(char *p){
 	print_free_info((char *)new_fblock + sizeof(mem_balloc_t));
 	
 	fusion_free();
-	
-	print_list();
 	
 	corruption_check();
 }
@@ -397,23 +405,23 @@ void print_info(void) {
 #ifdef MAIN
 int main(int argc, char **argv){
 
-  /* The main can be changed, it is *not* involved in tests */
   memory_init();
   print_info();
-  int i;
-  for( i = 0; i < 10; i++){
-    char *b = memory_alloc(rand()%8);
-    memory_free(b);
-  }
-
-  char * a = memory_alloc(0);
-  memory_free(a);
-
-
-  a = memory_alloc(10);
-  memory_free(a);
-
-  fprintf(stderr,"%lu\n",(long unsigned int) (memory_alloc(9)));
+  
+  /*//address is not the beginning of an allocate zone
+  char *a = memory_alloc(10);
+  memory_free(a+5);*/
+  
+  /*//pointer is out of memory
+  first_free->next = (mem_bfree_t*)100; 
+  memory_alloc(10);*/
+  
+  /*//magic corrupted
+  char *a = memory_alloc(10);
+  mem_balloc_t *alloc = (mem_balloc_t*)a;
+  alloc->magic = 1;
+  memory_alloc(10);*/
+  
   return EXIT_SUCCESS;
 }
 #endif 
