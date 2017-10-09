@@ -8,8 +8,6 @@
 #define couleur(param) printf("\033[%sm",param)
 
 #define MAGIC 314159265358979
-//#define MEMORY_SIZE 512
-//#define MAIN
 
 /* memory */
 char memory[MEMORY_SIZE];
@@ -17,6 +15,7 @@ char memory[MEMORY_SIZE];
 /* Pointer to the first free block in the memory */
 mem_bfree_t *first_free;
 
+/* boolean to inform on the corruption of the memory */
 int corrupted = 0;
 
 #define ULONG(x)((long unsigned int)(x))
@@ -24,6 +23,14 @@ int corrupted = 0;
 
 #if defined(FIRST_FIT)
 
+/*{
+	Found the first free block with a block size < size
+	precondition : size > 0
+	initial state : an address and his previous address in the linked list, the size
+		to allocate
+	final state : the address of a block and his previous block with the block size < size
+		NULL else
+}*/
 void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size){
 	mem_bfree_t *AP = *previous_address;
 	mem_bfree_t *AC = *current_address;
@@ -39,6 +46,14 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 
 #elif defined(BEST_FIT)
 
+/*{
+	Found the first free block with a minimum block size - size > 0
+	precondition : size > 0
+	initial state : an address and his previous address in the linked list, the size
+		to allocate
+	final state : the address of a block and his previous block with the block size < size
+		NULL else
+}*/
 void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size){
 	mem_bfree_t *AP = *previous_address;
 	mem_bfree_t *AC = *current_address;
@@ -69,6 +84,14 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 
 #elif defined(WORST_FIT)
 
+/*{
+	Found the first free block with a maximum block size - size > 0
+	precondition : size > 0
+	initial state : an address and his previous address in the linked list, the size
+		to allocate
+	final state : the address of a block and his previous block with the block size < size
+		NULL else
+}*/
 void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size){
 	mem_bfree_t *AP = *previous_address;
 	mem_bfree_t *AC = *current_address;
@@ -114,7 +137,6 @@ void run_at_exit(void){
 }
 
 void memory_init(void){
-	/* register the function that will be called when the programs exits*/
 	atexit(run_at_exit);
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
