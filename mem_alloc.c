@@ -124,6 +124,7 @@ void fit(mem_bfree_t **previous_address, mem_bfree_t **current_address, int size
 
 void run_at_exit(void){
 
+	//if the memory is corrupted we don't display the memory state
 	if(corrupted){
 		return;
 	}
@@ -138,15 +139,18 @@ void run_at_exit(void){
 
 void memory_init(void){
 	atexit(run_at_exit);
+	//Initialisation of the head of the linked list
 	first_free = (mem_bfree_t *)memory;
 	first_free->block_size = MEMORY_SIZE;
 	first_free->next = NULL;
 }
 
+/* Add size bytes to the address addr */
 mem_bfree_t *add_offset_address(mem_bfree_t *addr, int size){
 	return (mem_bfree_t *)((char *)addr + size);
 }
 
+/* check if the pointer in the linked list are not corrupted */
 int check_pointer(mem_bfree_t *AC){
 	if(AC->next == NULL){
 		return 1;
@@ -158,14 +162,17 @@ int check_pointer(mem_bfree_t *AC){
 	return (anext > ULONG(AC)) && (anext - ff < MEMORY_SIZE) && (ff - anext > 0);
 }
 
+/* check if the alignment is correct */
 int check_alignment(mem_bfree_t *AC){
 	return ULONG(AC) % MEM_ALIGNMENT == 0;
 }
 
+/* check if the magic number at the address AC is not corrupted */
 int check_magic(mem_balloc_t *AC){
 	return AC->magic == MAGIC;
 }
 
+/* check if the memory is not corrupted */
 void corruption_check(void){
 	char *p = memory;
 	int size_total=0;
@@ -210,6 +217,7 @@ void corruption_check(void){
 	return;
 }
 
+/* DEBUG : print the linked list of free block */
 void print_list(){
 	mem_bfree_t *AC = first_free;
 	
@@ -221,6 +229,7 @@ void print_list(){
 	}
 }
 
+/* Modify the size of the allocate block to align the allocate block */
 int memory_alignment(int size){
 	int r = size % MEM_ALIGNMENT;
 	
@@ -232,12 +241,14 @@ int memory_alignment(int size){
 }
 
 char *memory_alloc(int size){
-
+	
 	if(size < 0){
 		printf("size < 0 is impossible\n");
 		exit(0);
 	}
 	
+	/* we check the corruption before and after the allocation to be sure
+	that the allocation don't fail the allocator */
 	corruption_check();
 
 	char *new_offset;
@@ -289,6 +300,9 @@ char *memory_alloc(int size){
 	return new_offset;
 }
 
+/* procedure to merge the consecutive free block */
+/* it assume that the system is correct, so there are not
+most of 3 consecutive blocks */
 void fusion_free(){
 
 	mem_bfree_t *AP = first_free;	
@@ -313,6 +327,7 @@ void fusion_free(){
 	
 }
 
+/* safety check if the block is not already free */
 int is_allocated(char *p){
 	mem_bfree_t *AC = first_free;
 	
@@ -323,6 +338,7 @@ int is_allocated(char *p){
 	return (AC == NULL || ULONG(p) <= ULONG(AC));
 }
 
+/* safety check if the address is not the beginning of an allocate zone */
 int is_allocated_zone(char *p){
 	
     mem_balloc_t *block_allocate = (mem_balloc_t*)p;
